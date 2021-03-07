@@ -14,6 +14,21 @@ import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate } from 'workbox-strategies';
 
+import {
+  API,
+  graphqlOperation,
+} from 'aws-amplify';
+import { GraphQLResult } from '@aws-amplify/api';
+import { Observable } from 'zen-observable-ts';
+
+import {
+  listSessions,
+} from './graphql/queries';
+
+import Amplify from 'aws-amplify';
+import awsExports from './aws-exports';
+Amplify.configure(awsExports);
+
 declare const self: ServiceWorkerGlobalScope;
 
 clientsClaim();
@@ -78,3 +93,16 @@ self.addEventListener('message', (event) => {
 });
 
 // Any other custom service worker logic can go here.
+
+console.log('hello from the service worker!');
+
+const operation = API.graphql(graphqlOperation(listSessions, {input: {}}));
+if(!(operation instanceof Observable)){
+  operation.then((r) => {
+    console.log('got all sessions: ', r);
+  }).catch((e) => {
+    console.warn('error occurred getting sessions in service worker', e);
+  });
+}else{
+  console.warn('in service worker: expected type Promise<GraphQLResult<object>> but received Observable');
+}
